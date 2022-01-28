@@ -1,23 +1,65 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React, { useState } from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/router';
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker'
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzI5NDk3OSwiZXhwIjoxOTU4ODcwOTc5fQ.x-DBb5q7jxkqZfRcLKh_gHmYR9ZuFfReoDNKANCJg7U';
+const SUPABASE_URL = 'https://wzapaqnacqxdqgncxwpb.supabase.co';
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function escutaMensagensEmTempoReal(adicionaMensagem){
+    return supabaseClient
+        .from('mensagens')
+        .on('INSERT', ( respostaLive ) => {
+            adicionaMensagem(respostaLive.new);
+        })
+        .subscribe();
+}
 
 export default function ChatPage() {
     // Sua lógica vai aqui
+    const roteamento = useRouter();
+    const usuarioLogado = roteamento.query.username;
     const [mensagem, setMensagem] = React.useState('');
-    const [listaMensagens, setListaMensagens] = React.useState([])
+    const [listaMensagens, setListaMensagens] = React.useState([]);
 
+    React.useEffect(() => {
+        supabaseClient
+            .from('mensagens')
+            .select('*')
+            .order('id', { ascending: false })
+            .then(({ data }) => {
+                console.log("Dados da consulta: ", data);
+                setListaMensagens(data)
+            });
+
+            escutaMensagensEmTempoReal((novaMensagem) => {
+                setListaMensagens((valorAtualDaLista) => {
+                    return [
+                        novaMensagem,
+                        ...valorAtualDaLista,
+                    ]
+                });
+            });
+    }, [])
 
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            id: listaMensagens.length + 1,
-            de: 'victormcfreire',
+            //id: listaMensagens.length + 1,
+            de: usuarioLogado,
             texto: novaMensagem,
         };
-        setListaMensagens([
-            mensagem,
-            ...listaMensagens,
-        ]);
+
+        supabaseClient
+            .from('mensagens')
+            .insert([
+                mensagem
+            ])
+            .then(({ data }) => {
+                
+            });
         setMensagem('');
     }
     // ./Sua lógica vai aqui
@@ -99,6 +141,11 @@ export default function ChatPage() {
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
                         />
+                        <ButtonSendSticker 
+                            onStickerClick = {(sticker) => {
+                                handleNovaMensagem(':sticker:' + sticker);
+                            }}
+                        />
                     </Box>
                 </Box>
             </Box>
@@ -125,7 +172,7 @@ function Header() {
 }
 
 function MessageList(props) {
-    console.log('MessageList', props);
+    //console.log('MessageList', props);
     return (
         <Box
             tag="ul"
@@ -165,7 +212,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/vanessametonini.png`}
+                                src={`https://github.com/${mensagem.de}.png`}
                             />
                             <Text tag="strong">
                                 {mensagem.de}
@@ -181,7 +228,13 @@ function MessageList(props) {
                                 {(new Date().toLocaleDateString())}
                             </Text>
                         </Box>
-                        {mensagem.texto}
+                        {mensagem.texto.startsWith(':sticker:')
+                            ? (
+                                <Image src={mensagem.texto.replace(':sticker:', '')}/>
+                            )
+                            : (
+                                mensagem.texto
+                            )}
                     </Text>
                 );
             })}

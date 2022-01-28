@@ -21,21 +21,6 @@ function Title(props) {
     );
 }
 
-
-//Component React
-// function HomePage() {
-//     return(
-//         <div>
-//             <GlobalStyle />
-//             <Title tag="h2">Boas vindas de volta!</Title> 
-//             <h2>Discord - Alura Matrix</h2>
-            
-//         </div>
-//     )
-//   }
-  
-//   export default HomePage
-
 export default function PaginaInicial() {
   //const username = 'victormcfreire';
   const [username, setUsername] = React.useState('victormcfreire');
@@ -71,7 +56,7 @@ export default function PaginaInicial() {
             as="form"
             onSubmit={ function (eventInfo) {
               eventInfo.preventDefault();
-              roteamento.push('/chat');
+              roteamento.push(`/chat?username=${username}`);
             }}
             styleSheet={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -84,6 +69,11 @@ export default function PaginaInicial() {
             </Text>
 
             <TextField
+              value = {username}
+              onChange={ function Handler(event) {
+                const valor = event.target.value;
+                setUsername(valor);
+              }}
               fullWidth
               textFieldColors={{
                 neutral: {
@@ -94,11 +84,6 @@ export default function PaginaInicial() {
                 },
               }}
 
-              value = {username}
-              onChange={ function Handler(event) {
-                const valor = event.target.value;
-                setUsername(valor);
-              }}
             />
             <Button
               type='submit'
